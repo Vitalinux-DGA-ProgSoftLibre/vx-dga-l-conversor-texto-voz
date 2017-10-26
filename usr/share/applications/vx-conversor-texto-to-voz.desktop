@@ -1,0 +1,17 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Convert Text to Speech
+Name[en_US]=Convert Text to Speech
+Name[en]=Convert Text to Speech
+Name[es_ES]=Convertir Texto en Voz
+Comment=This app allow you Convert Text to Speech
+Comment[en]=This app allow you Convert Text to Speech
+Comment[es]=Aplicación que permite Convertir Texto en Voz
+Icon=text-to-voice
+Exec=vx-conversor-texto-voz text
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupNotify=true
+Hidden=false
+

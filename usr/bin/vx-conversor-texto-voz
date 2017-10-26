@@ -1,0 +1,171 @@
+#!/bin/bash
+
+function salir {
+	TEXTO="Ha habido problemas para extraer el texto del fichero ... Lo sentimos!!"
+	notify-send --icon text-to-voice --expire-time 8000 "Conversor texto a Voz" "${TEXTO}" &
+	exit 0
+}
+
+function close_exit(){
+    # Matarmos la ventana de Yad y se mata todo lo anterior...por estar en tuberia rota?
+    if [ -n "${YAD_PID}" ] && ps -p "${YAD_PID}" > /dev/null; then 
+        kill -9 "$YAD_PID"
+    fi
+    if [ -n "${MIPID}" ] && ps -p "${MIPID}" > /dev/null; then 
+    	# Matamos a todos los procesos hijos del proceso padre vx-conversor-texto-voz (entre ellos al mplayer)
+    	pkill -P ${MIPID}
+    	# Matamos al proceso vx-conversor-texto-voz
+    	kill -9 ${MIPID}
+    fi
+
+    exit 0
+
+}
+export -f close_exit
+
+function log_xsession(){
+#
+# Funcion que loguea el proceso. Si no se pasa como parámetro el nombre del fichero, dejará un log en /tmp
+# Si se quiere loguera en /var/log/vitalinux se llamará como log_xsession -o nombre_fichero
+#
+        while getopts 'o:' OPT; do
+        case $OPT in
+            o) LOGFILE=$OPTARG;;
+        esac
+        done
+
+        if [ "$LOGFILE" ] ; then
+                if [ ! -d /var/log/vitalinux ]; then
+                        mkdir -p /var/log/vitalinux
+                fi
+                LOGFILE="/var/log/vitalinux/$LOGFILE"
+        else
+                LOGFILE="/tmp/logfile"
+        fi
+        export fpipe=$(mktemp -u --tmpdir yadlog.XXXXXXXX)
+        mkfifo "$fpipe"
+        exec 3<> "$fpipe"
+        exec 2>&1
+        exec > >(tee -i "$fpipe" >> "$LOGFILE" )
+        # Borramos la pipe cuando salgamos
+        trap "rm -f $fpipe" EXIT
+
+        yad --title "Conversor de Texto en Voz" \
+            --window-icon vitalinux \
+            --image text-to-voice \
+            --width 600 \
+            --center \
+            --no-escape \
+            --progress --percentage=0 --button="Terminar:bash -c close_exit" < "$fpipe" &
+        # $! : informa del PID del último proceso que se lanzo en modo background (&)
+        YAD_LOG=$!
+        export YAD_LOG
+}
+
+function mensaje-error {
+
+	yad --title "Conversor Texto en Voz" \
+	--window-icon vitalinux \
+	--image text-to-voice \
+	--width 600 \
+	--center \
+   --text="Problemas en la conversión de Texto en Voz!!" \
+	--button="Continuar":0
+
+}
+
+# Obtenemos el PID del proceso que lanza el script vx-conversor-texto-voz para luego matar a los hijos que genera
+MIPID=$$
+export MIPID
+# El primer parámetro recibido indica el tipo de origen a convertir en voz: textfile, docfile, text
+# El resto de parámetros son rutas de archivos en el caso de: textfile y docfile
+TIPO="${1}"
+shift
+# Obtenemos el número de parámetros recibidos: %F son el número de rutas absolutas de los archivos seleccionados
+NUMPARAM=$#
+# Creamos una lista con los parámetros recibidos $@.  El primer parametro es el ${PARAM[0]} ...  ${PARAM[*]} sería todos
+# La mitad de los parametros recibidos son las rutas absolutas de los archivos, y la otra mitad son sus extensiones
+declare -a PARAM
+PARAM=($@)
+USUARIO="$(vx-usuario-grafico)"
+
+#yad --text "Se han seleccionado $# archivos y sus rutas son $*"
+INCREMENTO=$(echo 100/"${NUMPARAM}" | bc)
+CONTADOR=0
+
+DESTINO="texto-to-voz-${USUARIO}"
+# Comprobamos si se ha enviado un único parámetro para indicar el tipo o se han enviado rutas:
+if test -z "${1}" ; then
+	yad --title "Conversor de Texto en Voz" --center \
+		--window-icon vitalinux \
+		--image text-to-voice \
+		--text "\nEscribe el texto que quieres convertir en voz:\n" \
+		--text-info --editable --width 600 --height 500 \
+		--back pink \
+		--justify fill \
+		--button "Convertir:0" --button "Cancelar:1" > "/tmp/${DESTINO}.txt"
+	if [ $? -eq 0 ] ; then
+		cd /tmp
+		notify-send --icon text-to-voice --expire-time 8000 "Conversor texto a Voz" "Se va a reproducir el Texto indicado ..." &
+		txt2wave.py -i "${DESTINO}.txt" -l es-ES ; mplayer "${DESTINO}.mp3"
+	else
+		exit 0
+	fi
+else
+	log_xsession "vx-conversor-texto-voz.log"
+	echo "#Va a empezar a convertirse en voz los archivos seleccionados ..."
+	TEXTOFINAL="Ok!!! Ya se han terminado de reproducir los archivos indicados ..."
+	until [ -z "${1}" ] ; do
+		echo "#Reproduciendo el archivo: $(basename ${1}) ..."
+		TEXTOFINAL="${TEXTOFINAL}\nArchivo Texto a Voz: $(basename ${1}) ..."
+		cd /tmp
+		case "${TIPO}" in
+			"textfile" ) 
+				cp "${1}" "/tmp/${DESTINO}.txt"
+			;;
+			"odtfile" )
+				if ! ( pandoc -f odt -t plain -o "/tmp/${DESTINO}.txt" "${1}" ) ; then
+					salir
+				fi
+			;;
+			"docxfile" )
+				# docx2txt < "${1}" > "/tmp/${DESTINO}.txt"
+				if ! ( pandoc -f docx -t plain -o "/tmp/${DESTINO}.txt" "${1}" ) ; then
+					salir
+				fi
+			;;
+			"epubfile" )
+				if ! ( pandoc -f epub -t plain -o "/tmp/${DESTINO}.txt" "${1}" ) ; then
+					salir
+				fi
+			;;
+			"docfile" )
+				if ! ( catdoc "${1}" > "/tmp/${DESTINO}.txt" ) ; then
+					salir
+				fi
+			;;
+		esac
+
+		# Dividimos el archivo de texto resultante a convertir a voz en grupos de 50 líneas:
+		sed -e "s/\[\]//g" "${DESTINO}.txt" | sed -e "s/_//g" | sed -e "/^$/d" > "${DESTINO}-aux.txt"
+		LINEAS="$(wc -l < "${DESTINO}-aux.txt")"
+		GRUPOS="$(echo "scale=0;${LINEAS}/50 + 1" | bc)"
+		GRUPO=1
+		CONTADOR2=1
+		while test "${CONTADOR2}" -le "${LINEAS}" ; do
+			CONTADOR="$(echo "scale=0; ${CONTADOR}+(${INCREMENTO}/${GRUPOS})*${GRUPO}" | bc)"
+			echo "${CONTADOR}"
+			tail -n +"${CONTADOR2}" "${DESTINO}-aux.txt" | head -n $(echo "scale=0;${CONTADOR2} + 49" | bc) > "${DESTINO}-aux-50l-G${GRUPO}.txt"
+			txt2wave.py -i "${DESTINO}-aux-50l-G${GRUPO}.txt" -l es-ES ; mplayer "${DESTINO}-aux-50l-G${GRUPO}.mp3"
+			CONTADOR2="$(echo "scale=0;${CONTADOR2} + 50" | bc)"
+			let GRUPO+=1
+		done
+
+		shift
+	done
+	echo "#${TEXTOFINAL}"
+	echo "100"
+	
+fi
+
+exit 0

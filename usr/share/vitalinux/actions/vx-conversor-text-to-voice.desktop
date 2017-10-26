@@ -1,0 +1,65 @@
+[Desktop Entry]
+Type=Action
+Profiles=profile-zero;profile-one;profile-two;profile-three; profile-four; profile-five;
+
+Name[en_US]=Convert Text to Speech
+Name[en]=Convert Text to Speech
+Name[es_ES]=Convertir Texto en Voz
+Tooltip[en_US]=Convert Text to Speech
+Tooltip[es_ES]=Convertir Texto en Voz
+Tooltip[en]=Convert Text to Speech
+ToolbarLabel[en_US]=Convert Text to Speech
+ToolbarLabel[en]=Convert Text to Speech
+ToolbarLabel[es_ES]=Convertir Texto en Voz
+
+Icon[en_US]=text-to-voice
+Icon[en]=text-to-voice
+Icon[es_ES]=text-to-voice
+
+[X-Action-Profile profile-zero]
+MimeTypes=text/plain;
+Exec=/usr/bin/vx-conversor-texto-voz textfile %F
+Name[en_US]=Convert TextFile to Speech
+Name[en]=Convert TextFile to Speech
+Name[es_ES]=Convertir Fichero de Texto en Voz
+Tooltip[en_US]=Convert TextFile to Speech
+Tooltip[es_ES]=Convertir Fichero de Texto en Voz
+Tooltip[en]=Convert TextFile to Speech
+ToolbarLabel[en_US]=Convert TextFile to Speech
+ToolbarLabel[en]=Convert TextFile to Speech
+ToolbarLabel[es_ES]=Convertir Fichero de Texto en Voz
+
+[X-Action-Profile profile-one]
+MimeTypes=application/vnd.oasis.opendocument.text;
+Exec=/usr/bin/vx-conversor-texto-voz odtfile %F
+Name[en_US]=Convert DocFile to Speech
+Name[en]=Convert DocFile to Speech
+Name[es_ES]=Convertir Fichero de Doc en Voz
+
+[X-Action-Profile profile-two]
+MimeTypes=application/vnd.openxmlformats-officedocument.wordprocessingml.document; application/x-zip-compressed; application/zip;
+Exec=/usr/bin/vx-conversor-texto-voz docxfile %F
+Name[en_US]=Convert DocxFile to Speech
+Name[en]=Convert DocxFile to Speech
+Name[es_ES]=Convertir Fichero de Docx en Voz
+
+[X-Action-Profile profile-three]
+MimeTypes=inode/directory;
+Exec=/usr/bin/vx-conversor-texto-voz text
+Name[en_US]=Convert Text to Speech
+Name[en]=Convert Text to Speech
+Name[es_ES]=Convertir Texto en Voz
+
+[X-Action-Profile profile-four]
+MimeTypes=application/msword;
+Exec=/usr/bin/vx-conversor-texto-voz docfile %F
+Name[en_US]=Convert DocFile to Speech
+Name[en]=Convert DocFile to Speech
+Name[es_ES]=Convertir Fichero de Doc en Voz
+
+[X-Action-Profile profile-five]
+MimeTypes=application/epub+zip;
+Exec=/usr/bin/vx-conversor-texto-voz epubfile %F
+Name[en_US]=Convert EpubFile to Speech
+Name[en]=Convert EpubFile to Speech
+Name[es_ES]=Convertir Fichero Epub en Voz

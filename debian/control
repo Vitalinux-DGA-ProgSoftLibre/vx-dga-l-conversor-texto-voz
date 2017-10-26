@@ -1,0 +1,12 @@
+Source: vx-dga-l-conversor-texto-voz
+Section: utils
+Priority: extra
+Maintainer: Arturo Martín <amartinromero@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+
+Package: vx-dga-l-conversor-texto-voz
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, yad, zenity (>= 3.8.0), libttspico0, libttspico-utils, libttspico-data, ffmpeg, mplayer,pandoc, catdoc, docx2txt
+Description: Conversor de texto en voz
+ Conversor de texto en voz desde el explorador de archivos y aplicación
